@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+ /* iframe {
+  width: 100%;
+  height: 100vh;
+} */
+
+.terminal-container {
+  height: 650px;
+  width: 100%;
+}
+
+.xterm {
+  height: 100%;
+}
+
+.allotment-container {
+  height: 100%;
+}

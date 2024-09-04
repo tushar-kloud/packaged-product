@@ -1,0 +1,84 @@
+  # Node.js React Web App to Linux on Azure
+# Build a Node.js React app and deploy it to Azure as a Linux web app.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
+
+trigger:
+- master
+
+variables:
+  azureSubscription: 'genAILabsServiceConnection'
+  webAppName: 'genai-labs-frontend'
+  environmentName: 'genai-labs-frontend'
+  vmImageName: 'ubuntu-latest'
+  VITE_MISTRAL_API_KEY: 'j8Wt9l6FEre8PbArvXeOWKJOOS4pp5zn'
+  VITE_AZURE_BLOB_ACCOUNT: 'genailabsstorageaccount'
+  # VITE_BLOB_SAS_TOKEN:'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-08-29T23:53:51Z&st=2024-08-22T15:53:51Z&spr=https,http&sig=yRebKitEIGCNbfKy0mM%2BDjlKs%2FhIm4q0NOQJMcf27Tk%3D'
+  # VITE_AZURE_BLOB_CONNECTION_STRING: 'BlobEndpoint=https://genailabsstorageaccount.blob.core.windows.net/;QueueEndpoint=https://genailabsstorageaccount.queue.core.windows.net/;FileEndpoint=https://genailabsstorageaccount.file.core.windows.net/;TableEndpoint=https://genailabsstorageaccount.table.core.windows.net/;SharedAccessSignature=sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-08-29T23:53:51Z&st=2024-08-22T15:53:51Z&spr=https,http&sig=yRebKitEIGCNbfKy0mM%2BDjlKs%2FhIm4q0NOQJMcf27Tk%3D'
+  VITE_API_URL: 'https://genai-labs-backend-daduebcxdpdmfjez.centralindia-01.azurewebsites.net'
+  VITE_FIREBASE_API_KEY: 'AIzaSyDKN4f3M-rMmQ-XOwVuiw2lTzPAVgMwW7I'
+  VITE_FIREBASE_AUTH_DOMAIN: 'kloudstac-saas-addf6.firebaseapp.com'
+  VITE_FIREBASE_PROJECT_ID: 'kloudstac-saas-addf6'
+  VITE_FIREBASE_STORAGE_BUCKET: 'kloudstac-saas-addf6.appspot.com'
+  VITE_FIREBASE_MESSAGING_SENDER_ID: '651442972109'
+  VITE_FIREBASE_APP_ID: '1:651442972109:web:2e7b0003d761c91ff25084'
+  # VITE_FIREBASE_MEASUREMENT_ID: $(VITE_FIREBASE_MEASUREMENT_ID)
+
+stages:
+- stage: Build
+  displayName: Build stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '20.x'
+      displayName: 'Install Node.js'
+
+    - script: |
+        npm install
+      displayName: 'npm install'
+
+    - script: |
+        npm run build
+      displayName: 'npm build'
+
+    - task: ArchiveFiles@2
+      displayName: 'Archive files'
+      inputs:
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/dist'
+        includeRootFolder: false
+        archiveType: zip
+        archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+        replaceExistingArchive: true
+
+    - publish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+      artifact: drop
+
+- stage: Deploy
+  displayName: Deploy stage
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: Deploy
+    displayName: Deploy
+    environment: $(environmentName)
+    pool:
+      vmImage: $(vmImageName)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureRmWebAppDeployment@4
+            displayName: 'Azure App Service Deploy: genai-labs-frontend'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: webAppLinux
+              WebAppName: $(webAppName)
+              packageForLinux: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
+              RuntimeStack: 'NODE|20-lts'
+              StartupCommand: 'pm2 serve /home/site/wwwroot --no-daemon'
