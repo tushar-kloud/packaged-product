@@ -16,7 +16,9 @@ export const getLabList = () => async (dispatch) => {
     try {
 
         dispatch({ type: LABS_LIST_REQUEST })
+        '/api/training/labs'
         const { data } = await fetchLabList();
+
         dispatch({ type: LABS_LIST_SUCCESS, payload: data })
     }
     catch (error) {

@@ -1,7 +1,7 @@
 import axios from 'axios';
 const API = axios.create({
     // baseURL: import.meta.env.VITE_API_URL
-    baseURL : 'https://genailabs-singlepack-haghejgxf2hwffgk.centralindia-01.azurewebsites.net'
+    // baseURL : 'https://genailabs-singlepack-haghejgxf2hwffgk.centralindia-01.azurewebsites.net'
 });
 
 // Function to attach the Authorization header with the access token
